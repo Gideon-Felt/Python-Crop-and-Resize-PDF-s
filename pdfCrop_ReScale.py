@@ -190,12 +190,17 @@ def mc(pdfFile, top, bot, aosL, aosR, cwd):
 
 def cropPDFs(pdfFile, top, bot, aosL, aosR, cwd):
     # CROP MARGINS
-    cropCommand = ['pdf-crop-margins','-p','0', '--absolutePreCrop4','0',f'{bot}','0',f'{top}', '--absoluteOffset4',f'{aosL}','0',f'{aosR}','0', f'{pdfFile}.pdf']
+    cropCommand = ['pdf-crop-margins','-p','0', '--absolutePreCrop4','0',f'{bot}','0',f'{top}', '--absoluteOffset4', f'{aosL}','0',f'{aosR}','0', rf'{cwd}{pdfFile}.pdf']
     cropPDF = subprocess.Popen(cropCommand, text=True, shell=True, cwd=f'{cwd}')
     cropPDF.wait()
     print('Cropped to [0%] margins')
+    raw_file_name = pdfFile.split("\\")[1]
+    if f'{raw_file_name}_cropped.pdf' in os.listdir(cwd):
+        print("moving", f'{cwd}{raw_file_name}_cropped.pdf', "back to", f'{cwd}\\{pdfFile}_cropped.pdf')
+        shutil.move(f'{cwd}{raw_file_name}_cropped.pdf', f'{cwd}\\{pdfFile}_cropped.pdf')
+    # exit()
     # RE-SCALE PAGE
-    reScaleCommand = ['C:\\gs\\gs9_27\\bin\\gswin64.exe', '-sDEVICE=pdfwrite', '-o', f'{pdfFile}_reScaled.pdf', '-CompatibilityLevel=1.4', '-sPAPERSIZE=legal', '-dFIXEDMEDIA', '-dPDFFitPage', f'{pdfFile}_cropped.pdf']
+    reScaleCommand = ['C:\\gs\\gs9_27\\bin\\gswin64.exe', '-sDEVICE=pdfwrite', '-o', f'{pdfFile}_reScaled.pdf', '-CompatibilityLevel=1.4', '-sPAPERSIZE=legal', '-dFIXEDMEDIA', '-dPDFFitPage', f'{cwd}{pdfFile}_cropped.pdf']
     reScaledPDF = subprocess.Popen(reScaleCommand, text=True, shell=True, cwd=f'{cwd}')
     reScaledPDF.wait()
     print('Re-Scaled PDF file.')
@@ -215,6 +220,8 @@ def cleanUpPDFs(pdfFile, cwd):
 def countDirectories(CWD):
     directoryList = []
     for directory in os.listdir(CWD):
+        print(directory)
+        print("...")
         try:
             if os.listdir("{}/{}".format(CWD, directory)):
                 directoryList.append("{}/{}".format(CWD, directory))
@@ -233,10 +240,12 @@ def countFilesInEachDirectory(directoryList):
 def reFormPDFs():
     directoryList = countDirectories('E:\TEMP')
     allFiles = countFilesInEachDirectory(directoryList)
+    print(allFiles)
     for directory in allFiles:
         for file in directory:
-            print(file)
+            file = rf'{file}'
             # Reset default values to 0
+            
             pdfFile, top, bot, aosL, aosR, cwd = preProcessURAR(file)
             # COMPS
             if re.search('_C\d-\d_', file):                                         #TODO C1-4_ACI is not cropping correctly IDK why... but I will sleep now :)
@@ -252,6 +261,7 @@ def reFormPDFs():
                 pdfFile, top, bot, aosL, aosR, cwd = mc(pdfFile, top, bot, aosL, aosR, cwd)
             else:
                 continue
+            print(">>>>>>>>>>",f'{cwd}{pdfFile}')
             cropPDFs(pdfFile, top, bot, aosL, aosR, cwd)
             cleanUpPDFs(pdfFile, cwd)
 reFormPDFs()
